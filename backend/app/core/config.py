@@ -61,7 +61,12 @@ class Settings(BaseSettings):
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
         if self.DATABASE_URL:
-            return self.DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+            normalized = self.DATABASE_URL
+            if normalized.startswith("postgresql://"):
+                return normalized.replace("postgresql://", "postgresql+psycopg://", 1)
+            if normalized.startswith("postgres://"):
+                return normalized.replace("postgres://", "postgresql+psycopg://", 1)
+            return normalized
         return str(
             PostgresDsn.build(
                 scheme="postgresql+psycopg",

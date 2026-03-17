@@ -1,0 +1,36 @@
+name: PR policy
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Enforce repository PR policy
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const labels = (pr.labels || []).map(l => l.name);
+            const isDependabot = pr.user && pr.user.login === 'dependabot[bot]';
+            const allowed = isDependabot || labels.includes('dependencies');
+            if (allowed) {
+              core.info('Dependency-update PR detected; policy check passed.');
+              return;
+            }
+            const body = [
+              'Thanks for the contribution.',
+              '',
+              'This repository currently accepts **dependency-update PRs only** unless the maintainer explicitly requested the change.',
+              'If this PR was requested by the maintainer, please mention that in the PR description and add context.',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body,
+            });
