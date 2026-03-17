@@ -150,6 +150,44 @@ def test_reset_password_token_cannot_be_reused(client: TestClient, db: Session) 
     assert second_response.json()["detail"] == "Invalid token"
 
 
+def test_password_change_invalidates_existing_access_token(
+    client: TestClient, db: Session
+) -> None:
+    email = random_email()
+    password = random_lower_string()
+    new_password = random_lower_string()
+
+    user_create = UserCreate(
+        email=email,
+        full_name="Test User",
+        password=password,
+        is_active=True,
+        is_superuser=False,
+    )
+    create_user(session=db, user_create=user_create)
+
+    login_data = {"username": email, "password": password}
+    login_response = client.post(
+        f"{settings.API_V1_STR}/login/access-token", data=login_data
+    )
+    token = login_response.json()["access_token"]
+    auth_headers = {"Authorization": f"Bearer {token}"}
+
+    change_response = client.patch(
+        f"{settings.API_V1_STR}/users/me/password",
+        headers=auth_headers,
+        json={"current_password": password, "new_password": new_password},
+    )
+    assert change_response.status_code == 200
+
+    stale_token_response = client.post(
+        f"{settings.API_V1_STR}/login/test-token",
+        headers=auth_headers,
+    )
+    assert stale_token_response.status_code == 403
+    assert stale_token_response.json()["detail"] == "Could not validate credentials"
+
+
 def test_reset_password_invalid_token(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
