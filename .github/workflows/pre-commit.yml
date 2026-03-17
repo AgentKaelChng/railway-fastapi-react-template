@@ -7,11 +7,15 @@ on:
       - synchronize
 
 env:
-  # Forks and Dependabot don't have access to secrets
+  # Forks and Dependabot don't have access to secrets.
+  # PRE_COMMIT should be limited to the minimum practical scope: contents:write
+  # for this repository only. Prefer a short-lived GitHub App token over a long-lived PAT.
   HAS_SECRETS: ${{ secrets.PRE_COMMIT != '' }}
 
 jobs:
   pre-commit:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -23,7 +27,8 @@ jobs:
           ref: ${{ github.head_ref }}
           # And it needs the full history to be able to compute diffs
           fetch-depth: 0
-          # A token other than the default GITHUB_TOKEN is needed to be able to trigger CI
+          # A token other than the default GITHUB_TOKEN is needed to be able to trigger CI.
+          # Keep PRE_COMMIT restricted to contents:write on this repository only.
           token: ${{ secrets.PRE_COMMIT }}
       # pre-commit lite ci needs the default checkout configs to work
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

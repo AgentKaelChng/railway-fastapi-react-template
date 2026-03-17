@@ -1,6 +1,8 @@
 name: Label PRs
 
 on:
+  # WARNING: pull_request_target runs in the base-repo security context.
+  # Keep this workflow metadata-only. Do NOT add actions/checkout of PR code here.
   pull_request_target:
     types: [opened, synchronize, reopened]
 
