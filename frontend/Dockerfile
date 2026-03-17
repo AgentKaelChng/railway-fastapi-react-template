@@ -12,4 +12,6 @@ RUN bun run build
 
 FROM nginx:1
 COPY --from=build-stage /app/frontend/dist/ /usr/share/nginx/html
+RUN find /usr/share/nginx/html -type d -exec chmod 755 {} \; \
+ && find /usr/share/nginx/html -type f -exec chmod 644 {} \;
 COPY ./frontend/nginx.conf /etc/nginx/templates/default.conf.template
