@@ -6,7 +6,7 @@ from typing import Any
 
 import emails  # type: ignore
 import jwt
-from jinja2 import Template
+from jinja2 import Environment, select_autoescape
 from jwt.exceptions import InvalidTokenError
 
 from app.core import security
@@ -14,6 +14,7 @@ from app.core.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+email_template_env = Environment(autoescape=select_autoescape(default=True))
 
 
 @dataclass
@@ -26,7 +27,7 @@ def render_email_template(*, template_name: str, context: dict[str, Any]) -> str
     template_str = (
         Path(__file__).parent / "email-templates" / "build" / template_name
     ).read_text()
-    html_content = Template(template_str).render(context)
+    html_content = email_template_env.from_string(template_str).render(context)
     return html_content
 
 
@@ -68,7 +69,7 @@ def generate_test_email(email_to: str) -> EmailData:
 def generate_reset_password_email(email_to: str, email: str, token: str) -> EmailData:
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - Password recovery for user {email}"
-    link = f"{settings.FRONTEND_HOST}/reset-password?token={token}"
+    link = f"{settings.FRONTEND_HOST}/reset-password#token={token}"
     html_content = render_email_template(
         template_name="reset_password.html",
         context={
@@ -82,9 +83,7 @@ def generate_reset_password_email(email_to: str, email: str, token: str) -> Emai
     return EmailData(html_content=html_content, subject=subject)
 
 
-def generate_new_account_email(
-    email_to: str, username: str, password: str
-) -> EmailData:
+def generate_new_account_email(email_to: str, username: str, token: str) -> EmailData:
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - New account for user {username}"
     html_content = render_email_template(
@@ -92,32 +91,37 @@ def generate_new_account_email(
         context={
             "project_name": settings.PROJECT_NAME,
             "username": username,
-            "password": password,
             "email": email_to,
-            "link": settings.FRONTEND_HOST,
+            "link": f"{settings.FRONTEND_HOST}/reset-password#token={token}",
+            "valid_hours": settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS,
         },
     )
     return EmailData(html_content=html_content, subject=subject)
 
 
-def generate_password_reset_token(email: str) -> str:
+def generate_password_reset_token(email: str, password_reset_version: int) -> str:
     delta = timedelta(hours=settings.EMAIL_RESET_TOKEN_EXPIRE_HOURS)
     now = datetime.now(timezone.utc)
     expires = now + delta
     exp = expires.timestamp()
     encoded_jwt = jwt.encode(
-        {"exp": exp, "nbf": now, "sub": email},
+        {
+            "exp": exp,
+            "nbf": now,
+            "sub": email,
+            "prv": password_reset_version,
+        },
         settings.SECRET_KEY,
         algorithm=security.ALGORITHM,
     )
     return encoded_jwt
 
 
-def verify_password_reset_token(token: str) -> str | None:
+def verify_password_reset_token(token: str) -> tuple[str, int] | None:
     try:
         decoded_token = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
         )
-        return str(decoded_token["sub"])
-    except InvalidTokenError:
+        return str(decoded_token["sub"]), int(decoded_token.get("prv", -1))
+    except (InvalidTokenError, TypeError, ValueError):
         return None

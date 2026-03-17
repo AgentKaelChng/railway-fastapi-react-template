@@ -38,7 +38,7 @@ def test_create_user_new_email(
     client: TestClient, superuser_token_headers: dict[str, str], db: Session
 ) -> None:
     with (
-        patch("app.utils.send_email", return_value=None),
+        patch("app.utils.send_email", return_value=None) as send_email_mock,
         patch("app.core.config.settings.SMTP_HOST", "smtp.example.com"),
         patch("app.core.config.settings.SMTP_USER", "admin@example.com"),
     ):
@@ -55,6 +55,9 @@ def test_create_user_new_email(
         user = crud.get_user_by_email(session=db, email=username)
         assert user
         assert user.email == created_user["email"]
+        email_html = send_email_mock.call_args.kwargs["html_content"]
+        assert password not in email_html
+        assert "/reset-password#token=" in email_html
 
 
 def test_get_existing_user_as_superuser(

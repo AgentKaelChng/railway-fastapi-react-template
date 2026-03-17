@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:18
+    image: postgres:17.5-alpine
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
@@ -18,17 +18,17 @@ services:
       POSTGRES_USER: ${POSTGRES_USER?Variable not set}
       POSTGRES_DB: ${POSTGRES_DB?Variable not set}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
 
   adminer:
-    image: adminer
+    image: adminer:4.8.1
     restart: unless-stopped
     depends_on:
       - db
     environment:
       ADMINER_DESIGN: pepa-linha-dark
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
 
   backend:
     build:
@@ -59,8 +59,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD?Variable not set}
       DATABASE_URL: ${DATABASE_URL}
       SENTRY_DSN: ${SENTRY_DSN}
+      RUN_MIGRATIONS_ON_START: 1
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
       interval: 10s
@@ -68,11 +69,11 @@ services:
       retries: 5
 
   mailcatcher:
-    image: schickling/mailcatcher
+    image: axllent/mailpit:v1.20.5
     restart: unless-stopped
     ports:
-      - "1080:1080"
-      - "1025:1025"
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
 
   frontend:
     build:
@@ -91,8 +92,6 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile.playwright
-      args:
-        VITE_API_URL: http://backend:8000
     ipc: host
     depends_on:
       backend:
@@ -103,7 +102,7 @@ services:
       - .env
     environment:
       VITE_API_URL: http://backend:8000
-      MAILCATCHER_HOST: http://mailcatcher:1080
+      MAILCATCHER_HOST: http://mailcatcher:8025
       PLAYWRIGHT_HTML_HOST: 0.0.0.0
       CI: ${CI}
     volumes:

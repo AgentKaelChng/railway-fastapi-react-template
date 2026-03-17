@@ -40,7 +40,7 @@ function UserInfo({ fullName, email }: UserInfoProps) {
   )
 }
 
-export function User({ user }: { user: any }) {
+export function User({ user }: { user: UserPublic | null | undefined }) {
   const { logout } = useAuth()
   const { isMobile, setOpenMobile } = useSidebar()
 
@@ -93,5 +93,8 @@ export function User({ user }: { user: any }) {
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
+  )
+}
+debarMenu>
   )
 }

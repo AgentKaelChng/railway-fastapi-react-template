@@ -8,12 +8,11 @@ import {
   type UserRegister,
   UsersService,
 } from "@/client"
+import { clearAuthClientState, getCsrfToken, hasSessionHint } from "@/lib/auth"
 import { handleError } from "@/utils"
 import useCustomToast from "./useCustomToast"
 
-const isLoggedIn = () => {
-  return localStorage.getItem("access_token") !== null
-}
+const isLoggedIn = () => hasSessionHint()
 
 const useAuth = () => {
   const navigate = useNavigate()
@@ -24,6 +23,7 @@ const useAuth = () => {
     queryKey: ["currentUser"],
     queryFn: UsersService.readUserMe,
     enabled: isLoggedIn(),
+    retry: false,
   })
 
   const signUpMutation = useMutation({
@@ -32,30 +32,41 @@ const useAuth = () => {
     onSuccess: () => {
       navigate({ to: "/login" })
     },
-    onError: handleError.bind(showErrorToast),
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] })
-    },
+    onError: (error) => handleError(showErrorToast, error),
   })
 
-  const login = async (data: AccessToken) => {
-    const response = await LoginService.loginAccessToken({
-      formData: data,
-    })
-    localStorage.setItem("access_token", response.access_token)
-  }
-
   const loginMutation = useMutation({
-    mutationFn: login,
+    mutationFn: (data: AccessToken) =>
+      LoginService.loginAccessToken({ formData: data }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] })
       navigate({ to: "/" })
     },
-    onError: handleError.bind(showErrorToast),
+    onError: (error) => handleError(showErrorToast, error),
+  })
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/v1/login/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "X-CSRF-Token": getCsrfToken() || "",
+        },
+      })
+    },
+    onSettled: () => {
+      clearAuthClientState()
+      queryClient.removeQueries({ queryKey: ["currentUser"] })
+      navigate({ to: "/login" })
+    },
   })
 
   const logout = () => {
-    localStorage.removeItem("access_token")
-    navigate({ to: "/login" })
+    if (logoutMutation.isPending) {
+      return
+    }
+    logoutMutation.mutate()
   }
 
   return {

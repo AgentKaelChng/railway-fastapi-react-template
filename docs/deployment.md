@@ -29,8 +29,8 @@ Use `backend/Dockerfile`.
 The backend startup sequence is:
 
 1. wait for Postgres
-2. run `alembic upgrade head`
-3. seed the initial admin user
+2. optionally run `alembic upgrade head` when `RUN_MIGRATIONS_ON_START=1`
+3. optionally seed the initial admin user when startup migrations are enabled
 4. start Uvicorn on `$PORT`
 
 #### Required backend variables
@@ -137,6 +137,22 @@ Use `compose.yml` and `compose.override.yml` only for local development.
 Production on Railway does **not** require:
 
 - Traefik
+- Adminer
+- wildcard subdomains
+- a self-hosted Docker host
+
+ Adminer
+- wildcard subdomains
+- a self-hosted Docker host
+
+quire:
+
+- Traefik
+- Adminer
+- wildcard subdomains
+- a self-hosted Docker host
+
+Traefik
 - Adminer
 - wildcard subdomains
 - a self-hosted Docker host

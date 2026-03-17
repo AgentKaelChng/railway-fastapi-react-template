@@ -81,7 +81,7 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
       setIsOpen(false)
       onSuccess()
     },
-    onError: handleError.bind(showErrorToast),
+    onError: (error) => handleError(showErrorToast, error),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] })
     },

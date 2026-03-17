@@ -6,6 +6,7 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router"
+import { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -25,9 +26,13 @@ import { isLoggedIn } from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
-const searchSchema = z.object({
-  token: z.string().catch(""),
-})
+const getResetTokenFromHash = () => {
+  const hash = window.location.hash.startsWith("#")
+    ? window.location.hash.slice(1)
+    : window.location.hash
+  const params = new URLSearchParams(hash)
+  return params.get("token") ?? ""
+}
 
 const formSchema = z
   .object({
@@ -48,13 +53,9 @@ type FormData = z.infer<typeof formSchema>
 
 export const Route = createFileRoute("/reset-password")({
   component: ResetPassword,
-  validateSearch: searchSchema,
-  beforeLoad: async ({ search }) => {
+  beforeLoad: async () => {
     if (isLoggedIn()) {
       throw redirect({ to: "/" })
-    }
-    if (!search.token) {
-      throw redirect({ to: "/login" })
     }
   },
   head: () => ({
@@ -67,9 +68,15 @@ export const Route = createFileRoute("/reset-password")({
 })
 
 function ResetPassword() {
-  const { token } = Route.useSearch()
+  const token = getResetTokenFromHash()
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!token) {
+      navigate({ to: "/login" })
+    }
+  }, [navigate, token])
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -87,9 +94,10 @@ function ResetPassword() {
     onSuccess: () => {
       showSuccessToast("Password updated successfully")
       form.reset()
+      window.history.replaceState(null, "", window.location.pathname)
       navigate({ to: "/login" })
     },
-    onError: handleError.bind(showErrorToast),
+    onError: (error) => handleError(showErrorToast, error),
   })
 
   const onSubmit = (data: FormData) => {
@@ -148,6 +156,7 @@ function ResetPassword() {
               type="submit"
               className="w-full"
               loading={mutation.isPending}
+              disabled={!token}
             >
               Reset Password
             </LoadingButton>

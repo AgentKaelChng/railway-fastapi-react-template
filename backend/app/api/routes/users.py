@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import col, delete, func, select
 
 from app import crud
@@ -11,6 +11,7 @@ from app.api.deps import (
     get_current_active_superuser,
 )
 from app.core.config import settings
+from app.core.rate_limit import get_rate_limit_key, limiter
 from app.core.security import get_password_hash, verify_password
 from app.models import (
     Item,
@@ -24,7 +25,11 @@ from app.models import (
     UserUpdate,
     UserUpdateMe,
 )
-from app.utils import generate_new_account_email, send_email
+from app.utils import (
+    generate_new_account_email,
+    generate_password_reset_token,
+    send_email,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -66,8 +71,14 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
 
     user = crud.create_user(session=session, user_create=user_in)
     if settings.emails_enabled and user_in.email:
+        password_reset_token = generate_password_reset_token(
+            email=user.email,
+            password_reset_version=user.password_reset_version,
+        )
         email_data = generate_new_account_email(
-            email_to=user_in.email, username=user_in.email, password=user_in.password
+            email_to=user.email,
+            username=user.email,
+            token=password_reset_token,
         )
         send_email(
             email_to=user_in.email,
@@ -115,6 +126,8 @@ def update_password_me(
         )
     hashed_password = get_password_hash(body.new_password)
     current_user.hashed_password = hashed_password
+    current_user.password_reset_version += 1
+    current_user.token_version += 1
     session.add(current_user)
     session.commit()
     return Message(message="Password updated successfully")
@@ -143,10 +156,16 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
 
 
 @router.post("/signup", response_model=UserPublic)
-def register_user(session: SessionDep, user_in: UserRegister) -> Any:
+def register_user(request: Request, session: SessionDep, user_in: UserRegister) -> Any:
     """
     Create new user without the need to be logged in.
     """
+    limiter.check(
+        key=get_rate_limit_key(request, "signup"),
+        limit=5,
+        window_seconds=300,
+    )
+
     user = crud.get_user_by_email(session=session, email=user_in.email)
     if user:
         raise HTTPException(
@@ -166,6 +185,8 @@ def read_user_by_id(
     Get a specific user by id.
     """
     user = session.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
     if user == current_user:
         return user
     if not current_user.is_superuser:
@@ -173,8 +194,6 @@ def read_user_by_id(
             status_code=403,
             detail="The user doesn't have enough privileges",
         )
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
     return user
 
 

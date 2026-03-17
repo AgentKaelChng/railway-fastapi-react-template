@@ -26,6 +26,17 @@ Open <http://localhost:5173>.
 
 The frontend uses `VITE_API_URL`.
 
+## Auth model
+
+The frontend uses backend-issued **HttpOnly auth cookies** by default.
+
+That means:
+- no auth token is stored in `localStorage`
+- requests are sent with credentials enabled
+- a readable CSRF cookie is mirrored into the `X-CSRF-Token` header for state-changing requests
+
+If you change auth behavior, update both the backend cookie settings and the frontend request/auth helpers together.
+
 Example:
 
 ```env

@@ -1,16 +1,17 @@
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from app.api.deps import SessionDep
+from app.api.deps import SessionDep, get_current_active_superuser
 from app.core.security import get_password_hash
-from app.models import (
-    User,
-    UserPublic,
-)
+from app.models import User, UserPublic
 
-router = APIRouter(tags=["private"], prefix="/private")
+router = APIRouter(
+    tags=["private"],
+    prefix="/private",
+    dependencies=[Depends(get_current_active_superuser)],
+)
 
 
 class PrivateUserCreate(BaseModel):

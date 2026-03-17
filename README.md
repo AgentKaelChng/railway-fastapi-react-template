@@ -67,7 +67,7 @@ Local URLs:
 - frontend: <http://localhost:5173>
 - backend: <http://localhost:8000>
 - Swagger UI: <http://localhost:8000/docs>
-- MailCatcher: <http://localhost:1080>
+- Mailpit: <http://localhost:8025>
 - Adminer: <http://localhost:8080>
 
 ### 3) Local development without Docker
@@ -103,6 +103,21 @@ The bootstrap script wires environment variables consistently for either `produc
 - set custom domains for frontend and backend
 - set `FRONTEND_HOST` and `BACKEND_CORS_ORIGINS` correctly
 - rotate all default secrets
+- configure SMTP if you want password recovery emails
+- add Sentry if you want error monitoring
+
+## Local dev vs production
+
+- `compose.yml` and `compose.override.yml` are for **local development**
+- Railway services are the **production** deployment model
+- do not treat the Docker Compose topology as the production reference architecture
+
+## Credit
+
+This project is adapted from <https://github.com/fastapi/full-stack-fastapi-template>.
+
+The original template is excellent. This fork simply changes the infrastructure opinion from self-hosted to Railway-first.
+tate all default secrets
 - configure SMTP if you want password recovery emails
 - add Sentry if you want error monitoring
 

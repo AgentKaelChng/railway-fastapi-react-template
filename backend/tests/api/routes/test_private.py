@@ -5,9 +5,25 @@ from app.core.config import settings
 from app.models import User
 
 
-def test_create_user(client: TestClient, db: Session) -> None:
+def test_create_user_requires_superuser(client: TestClient) -> None:
     r = client.post(
         f"{settings.API_V1_STR}/private/users/",
+        json={
+            "email": "pollo@listo.com",
+            "password": "password123",
+            "full_name": "Pollo Listo",
+        },
+    )
+
+    assert r.status_code == 401
+
+
+def test_create_user_as_superuser(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    r = client.post(
+        f"{settings.API_V1_STR}/private/users/",
+        headers=superuser_token_headers,
         json={
             "email": "pollo@listo.com",
             "password": "password123",
