@@ -8,6 +8,7 @@ on:
 
 jobs:
   labeler:
+    if: github.repository_owner == 'AgentKaelChng'
     runs-on: ubuntu-latest
     permissions:
       contents: read

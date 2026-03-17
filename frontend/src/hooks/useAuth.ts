@@ -33,9 +33,6 @@ const useAuth = () => {
       navigate({ to: "/login" })
     },
     onError: (error) => handleError(showErrorToast, error),
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] })
-    },
   })
 
   const loginMutation = useMutation({
