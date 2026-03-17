@@ -17,7 +17,7 @@ Local URLs:
 - Swagger UI: <http://localhost:8000/docs>
 - ReDoc: <http://localhost:8000/redoc>
 - Adminer: <http://localhost:8080>
-- MailCatcher: <http://localhost:1080>
+- Mailpit: <http://localhost:8025>
 
 ## Logs
 
@@ -124,6 +124,17 @@ UI mode:
 ```bash
 bunx playwright test --ui
 ```
+
+## Production note
+
+The local Docker stack is for development convenience only.
+
+Production is expected to run on Railway with:
+
+- Railway Postgres
+- separate backend service
+- separate frontend service
+and keep secure cookies enabled.
 
 ## Production note
 

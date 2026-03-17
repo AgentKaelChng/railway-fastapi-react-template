@@ -8,50 +8,11 @@ import {
   type UserRegister,
   UsersService,
 } from "@/client"
+import { clearAuthClientState, getCsrfToken, hasSessionHint } from "@/lib/auth"
 import { handleError } from "@/utils"
 import useCustomToast from "./useCustomToast"
 
-type JwtPayload = {
-  exp?: number
-}
-
-const parseJwtPayload = (token: string): JwtPayload | null => {
-  const parts = token.split(".")
-  if (parts.length !== 3) {
-    return null
-  }
-
-  try {
-    const payload = parts[1]
-      .replace(/-/g, "+")
-      .replace(/_/g, "/")
-      .padEnd(Math.ceil(parts[1].length / 4) * 4, "=")
-    return JSON.parse(window.atob(payload)) as JwtPayload
-  } catch {
-    return null
-  }
-}
-
-const isLoggedIn = () => {
-  const token = localStorage.getItem("access_token")
-  if (!token) {
-    return false
-  }
-
-  const payload = parseJwtPayload(token)
-  if (!payload?.exp) {
-    localStorage.removeItem("access_token")
-    return false
-  }
-
-  const nowInSeconds = Math.floor(Date.now() / 1000)
-  if (payload.exp <= nowInSeconds) {
-    localStorage.removeItem("access_token")
-    return false
-  }
-
-  return true
-}
+const isLoggedIn = () => hasSessionHint()
 
 const useAuth = () => {
   const navigate = useNavigate()
@@ -62,6 +23,7 @@ const useAuth = () => {
     queryKey: ["currentUser"],
     queryFn: UsersService.readUserMe,
     enabled: isLoggedIn(),
+    retry: false,
   })
 
   const signUpMutation = useMutation({
@@ -76,24 +38,38 @@ const useAuth = () => {
     },
   })
 
-  const login = async (data: AccessToken) => {
-    const response = await LoginService.loginAccessToken({
-      formData: data,
-    })
-    localStorage.setItem("access_token", response.access_token)
-  }
-
   const loginMutation = useMutation({
-    mutationFn: login,
+    mutationFn: (data: AccessToken) =>
+      LoginService.loginAccessToken({ formData: data }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] })
       navigate({ to: "/" })
     },
     onError: (error) => handleError(showErrorToast, error),
   })
 
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/v1/login/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "X-CSRF-Token": getCsrfToken() || "",
+        },
+      })
+    },
+    onSettled: () => {
+      clearAuthClientState()
+      queryClient.removeQueries({ queryKey: ["currentUser"] })
+      navigate({ to: "/login" })
+    },
+  })
+
   const logout = () => {
-    localStorage.removeItem("access_token")
-    navigate({ to: "/login" })
+    if (logoutMutation.isPending) {
+      return
+    }
+    logoutMutation.mutate()
   }
 
   return {

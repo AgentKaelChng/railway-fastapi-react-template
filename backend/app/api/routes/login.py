@@ -1,14 +1,13 @@
-from datetime import timedelta
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app import crud
 from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
 from app.core import security
-from app.core.config import settings
+from app.core.auth_cookies import clear_auth_cookies, new_csrf_token, set_auth_cookies
 from app.core.rate_limit import get_rate_limit_key, limiter
 from app.models import Message, NewPassword, Token, UserPublic, UserUpdate
 from app.utils import (
@@ -21,15 +20,13 @@ from app.utils import (
 router = APIRouter(tags=["login"])
 
 
-@router.post("/login/access-token")
+@router.post("/login/access-token", response_model=Token)
 def login_access_token(
     request: Request,
+    response: Response,
     session: SessionDep,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
-    """
-    OAuth2 compatible token login, get an access token for future requests
-    """
     limiter.check(
         key=get_rate_limit_key(request, "login", form_data.username.lower()),
         limit=5,
@@ -44,29 +41,32 @@ def login_access_token(
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
 
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    return Token(
-        access_token=security.create_access_token(
-            user.id,
-            expires_delta=access_token_expires,
-            token_version=user.token_version,
-        )
+    access_token = security.create_access_token(
+        user.id,
+        expires_delta=security.access_token_expires_delta(),
+        token_version=user.token_version,
     )
+    set_auth_cookies(
+        response=response,
+        access_token=access_token,
+        csrf_token=new_csrf_token(),
+    )
+    return Token(access_token=access_token)
+
+
+@router.post("/login/logout", response_model=Message)
+def logout(response: Response) -> Message:
+    clear_auth_cookies(response)
+    return Message(message="Logged out successfully")
 
 
 @router.post("/login/test-token", response_model=UserPublic)
 def test_token(current_user: CurrentUser) -> Any:
-    """
-    Test access token
-    """
     return current_user
 
 
 @router.post("/password-recovery/{email}")
 def recover_password(request: Request, email: str, session: SessionDep) -> Message:
-    """
-    Password Recovery
-    """
     limiter.check(
         key=get_rate_limit_key(request, "password-recovery", email.lower()),
         limit=3,
@@ -74,9 +74,6 @@ def recover_password(request: Request, email: str, session: SessionDep) -> Messa
     )
 
     user = crud.get_user_by_email(session=session, email=email)
-
-    # Always return the same response to prevent email enumeration attacks
-    # Only send email if user actually exists
     if user:
         password_reset_token = generate_password_reset_token(
             email=email,
@@ -97,9 +94,6 @@ def recover_password(request: Request, email: str, session: SessionDep) -> Messa
 
 @router.post("/reset-password/")
 def reset_password(session: SessionDep, body: NewPassword) -> Message:
-    """
-    Reset password
-    """
     token_data = verify_password_reset_token(token=body.token)
     if not token_data:
         raise HTTPException(status_code=400, detail="Invalid token")
@@ -107,7 +101,6 @@ def reset_password(session: SessionDep, body: NewPassword) -> Message:
     email, password_reset_version = token_data
     user = crud.get_user_by_email(session=session, email=email)
     if not user:
-        # Don't reveal that the user doesn't exist - use same error as invalid token
         raise HTTPException(status_code=400, detail="Invalid token")
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
@@ -129,9 +122,6 @@ def reset_password(session: SessionDep, body: NewPassword) -> Message:
     response_class=HTMLResponse,
 )
 def recover_password_html_content(email: str, session: SessionDep) -> Any:
-    """
-    HTML Content for Password Recovery
-    """
     user = crud.get_user_by_email(session=session, email=email)
 
     if not user:

@@ -18,6 +18,10 @@ password_hash = PasswordHash(
 ALGORITHM = "HS256"
 
 
+def access_token_expires_delta() -> timedelta:
+    return timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
+
 def create_access_token(
     subject: str | Any, expires_delta: timedelta, token_version: int
 ) -> str:
