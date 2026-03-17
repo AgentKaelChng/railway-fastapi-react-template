@@ -44,7 +44,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Setup uv
-        uses: astral-sh/setup-uv@22695119d769bdb6f7032ad67b9bca0ef8c4a174 # v5.4.0
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
         with:
           cache-dependency-glob: |
             requirements**.txt
