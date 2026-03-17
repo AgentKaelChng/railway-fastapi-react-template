@@ -2,6 +2,11 @@
 
 This is the fastest path to a working deploy.
 
+## Recommended repo model
+
+- `main` -> production
+- `develop` -> staging
+
 ## Create services
 
 In one Railway project, create:
@@ -9,6 +14,47 @@ In one Railway project, create:
 1. **Postgres**
 2. **backend** (from `backend/Dockerfile`)
 3. **frontend** (from `frontend/Dockerfile`)
+
+## Fastest repeatable path: bootstrap script
+
+After creating the Railway project/services, use:
+
+```bash
+./scripts/railway-bootstrap.sh \
+  --environment production \
+  --project-name "Your App Name" \
+  --frontend-domain app.example.com \
+  --backend-domain api.example.com \
+  --admin-email you@example.com \
+  --admin-password 'replace-with-a-strong-password' \
+  --secret-key 'replace-with-a-long-random-secret'
+```
+
+For staging, run the same script from the `develop` branch:
+
+```bash
+git checkout develop
+./scripts/railway-bootstrap.sh \
+  --environment staging \
+  --project-name "Your App Name (Staging)" \
+  --frontend-domain staging-app.example.com \
+  --backend-domain staging-api.example.com \
+  --admin-email you@example.com \
+  --admin-password 'replace-with-a-strong-password' \
+  --secret-key 'replace-with-a-long-random-secret'
+```
+
+The script:
+
+- wires backend/frontend variables for the chosen environment
+- creates `staging` by duplicating `production` if needed
+- deploys backend/frontend using the correct service-specific Railway config
+
+What it does **not** do for you:
+
+- create the Postgres/backend/frontend services
+- assign custom domains automatically
+- guess your secrets for you
 
 ## Backend variables
 

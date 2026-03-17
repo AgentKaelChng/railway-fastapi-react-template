@@ -14,6 +14,7 @@ Create a single Railway project with these services:
 
 If you just want the shortest working path, use [RAILWAY_QUICKSTART.md](./RAILWAY_QUICKSTART.md) first and come back here for the fuller reference.
 
+There is also a helper script at [`scripts/railway-bootstrap.sh`](./scripts/railway-bootstrap.sh) that standardizes variable wiring and deploys for either `production` or `staging`.
 
 ### Postgres
 
@@ -71,14 +72,21 @@ Because Vite bakes variables at build time, changing `VITE_API_URL` requires a r
 
 Use separate domains or subdomains, for example:
 
+### Production
+
 - frontend: `app.example.com`
 - backend: `api.example.com`
 
-Then set:
+### Staging
 
-- `FRONTEND_HOST=https://app.example.com`
-- `BACKEND_CORS_ORIGINS=["https://app.example.com"]`
-- `VITE_API_URL=https://api.example.com`
+- frontend: `staging-app.example.com`
+- backend: `staging-api.example.com`
+
+Then set the variables to match the chosen environment:
+
+- `FRONTEND_HOST=https://<frontend-domain>`
+- `BACKEND_CORS_ORIGINS=["https://<frontend-domain>"]`
+- `VITE_API_URL=https://<backend-domain>`
 
 ## Secrets
 
