@@ -91,7 +91,8 @@ bun run dev
 
 ## Deploy on Railway
 
-See [deployment.md](./deployment.md) for the exact service setup and required environment variables.
+- Fastest path: [RAILWAY_QUICKSTART.md](./RAILWAY_QUICKSTART.md)
+- Full guide: [deployment.md](./deployment.md)
 
 ## Recommended next steps after deploy
 

@@ -12,6 +12,9 @@ Create a single Railway project with these services:
 
 ## Service setup
 
+If you just want the shortest working path, use [RAILWAY_QUICKSTART.md](./RAILWAY_QUICKSTART.md) first and come back here for the fuller reference.
+
+
 ### Postgres
 
 - Add a Railway PostgreSQL service.
