@@ -97,7 +97,7 @@ function ResetPassword() {
       window.history.replaceState(null, "", window.location.pathname)
       navigate({ to: "/login" })
     },
-    onError: handleError.bind(showErrorToast),
+    onError: (error) => handleError(showErrorToast, error),
   })
 
   const onSubmit = (data: FormData) => {

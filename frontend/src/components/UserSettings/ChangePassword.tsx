@@ -58,7 +58,7 @@ const ChangePassword = () => {
       showSuccessToast("Password updated successfully")
       form.reset()
     },
-    onError: handleError.bind(showErrorToast),
+    onError: (error) => handleError(showErrorToast, error),
   })
 
   const onSubmit = async (data: FormData) => {

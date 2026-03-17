@@ -36,12 +36,10 @@ test("User can reset password successfully using the link", async ({
   const password = randomPassword()
   const newPassword = randomPassword()
 
-  // Sign up a new user
   await signUpNewUser(page, fullName, email, password)
 
   await page.goto("/recover-password")
   await page.getByTestId("email-input").fill(email)
-
   await page.getByRole("button", { name: "Continue" }).click()
 
   const emailData = await findLastEmail({
@@ -54,28 +52,22 @@ test("User can reset password successfully using the link", async ({
     `${process.env.MAILCATCHER_HOST}/messages/${emailData.id}.html`,
   )
 
-  const selector = 'a[href*="/reset-password?token="]'
+  const selector = 'a[href*="/reset-password#token="]'
+  const emailUrl = await page.getAttribute(selector, "href")
+  const url = emailUrl!.replace("http://localhost/", "http://localhost:5173/")
 
-  let url = await page.getAttribute(selector, "href")
-
-  // TODO: update var instead of doing a replace
-  url = url!.replace("http://localhost/", "http://localhost:5173/")
-
-  // Set the new password and confirm it
   await page.goto(url)
-
   await page.getByTestId("new-password-input").fill(newPassword)
   await page.getByTestId("confirm-password-input").fill(newPassword)
   await page.getByRole("button", { name: "Reset Password" }).click()
   await expect(page.getByText("Password updated successfully")).toBeVisible()
 
-  // Check if the user is able to login with the new password
   await logInUser(page, email, newPassword)
 })
 
 test("Expired or invalid reset link", async ({ page }) => {
   const password = randomPassword()
-  const invalidUrl = "/reset-password?token=invalidtoken"
+  const invalidUrl = "/reset-password#token=invalidtoken"
 
   await page.goto(invalidUrl)
 
@@ -92,7 +84,6 @@ test("Weak new password validation", async ({ page, request }) => {
   const password = randomPassword()
   const weakPassword = "123"
 
-  // Sign up a new user
   await signUpNewUser(page, fullName, email, password)
 
   await page.goto("/recover-password")
@@ -109,11 +100,10 @@ test("Weak new password validation", async ({ page, request }) => {
     `${process.env.MAILCATCHER_HOST}/messages/${emailData.id}.html`,
   )
 
-  const selector = 'a[href*="/reset-password?token="]'
-  let url = await page.getAttribute(selector, "href")
-  url = url!.replace("http://localhost/", "http://localhost:5173/")
+  const selector = 'a[href*="/reset-password#token="]'
+  const emailUrl = await page.getAttribute(selector, "href")
+  const url = emailUrl!.replace("http://localhost/", "http://localhost:5173/")
 
-  // Set a weak new password
   await page.goto(url)
   await page.getByTestId("new-password-input").fill(weakPassword)
   await page.getByTestId("confirm-password-input").fill(weakPassword)
@@ -122,4 +112,4 @@ test("Weak new password validation", async ({ page, request }) => {
   await expect(
     page.getByText("Password must be at least 8 characters"),
   ).toBeVisible()
-})
+}

@@ -60,7 +60,7 @@ const AddItem = () => {
       form.reset()
       setIsOpen(false)
     },
-    onError: handleError.bind(showErrorToast),
+    onError: (error) => handleError(showErrorToast, error),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["items"] })
     },

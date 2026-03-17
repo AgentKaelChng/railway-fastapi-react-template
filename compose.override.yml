@@ -33,4 +33,4 @@ services:
   playwright:
     environment:
       VITE_API_URL: http://backend:8000
-      MAILCATCHER_HOST: http://mailcatcher:1080
+      MAILCATCHER_HOST: http://mailcatcher:8025

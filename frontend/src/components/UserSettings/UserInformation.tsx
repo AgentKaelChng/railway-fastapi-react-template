@@ -55,7 +55,7 @@ const UserInformation = () => {
       showSuccessToast("User updated successfully")
       toggleEditMode()
     },
-    onError: handleError.bind(showErrorToast),
+    onError: (error) => handleError(showErrorToast, error),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["currentUser"] })
     },

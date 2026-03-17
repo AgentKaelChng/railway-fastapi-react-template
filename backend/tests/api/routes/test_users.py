@@ -57,7 +57,7 @@ def test_create_user_new_email(
         assert user.email == created_user["email"]
         email_html = send_email_mock.call_args.kwargs["html_content"]
         assert password not in email_html
-        assert "/reset-password?token=" in email_html
+        assert "/reset-password#token=" in email_html
 
 
 def test_get_existing_user_as_superuser(

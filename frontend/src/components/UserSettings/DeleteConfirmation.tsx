@@ -30,7 +30,7 @@ const DeleteConfirmation = () => {
       showSuccessToast("Your account has been successfully deleted")
       logout()
     },
-    onError: handleError.bind(showErrorToast),
+    onError: (error) => handleError(showErrorToast, error),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["currentUser"] })
     },
