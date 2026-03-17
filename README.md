@@ -2,8 +2,6 @@
 
 A Railway-first full-stack starter based on `fastapi/full-stack-fastapi-template`, cleaned up for managed hosting instead of self-hosted Docker + Traefik.
 
-This repo is intended to be a **standard starter** for future Kael-managed full-stack projects.
-
 ## Why this exists
 
 The original FastAPI template is excellent, but its production story assumes:
@@ -31,19 +29,10 @@ This repo keeps the good parts of the app scaffold and replaces the deployment o
 - production story no longer depends on Traefik, Adminer, or wildcard subdomains
 - `.env.example` files added and real `.env` files ignored
 - local Docker Compose retained for development only
-- staging + production branch strategy documented
-- deployment supports Railway UI, Railway CLI, and GitHub Actions
-
-## Standard operating model
-
-- **`develop` → staging**
-- **`main` → production**
-
-Read [BRANCHING.md](./BRANCHING.md) for the environment strategy.
 
 ## Architecture
 
-In Railway, create one project per environment with:
+In Railway, create one project with:
 
 1. **Postgres** service
 2. **backend** service using `backend/Dockerfile`
@@ -102,16 +91,12 @@ bun run dev
 
 ## Deploy on Railway
 
-- Fastest path: [RAILWAY_QUICKSTART.md](./RAILWAY_QUICKSTART.md)
-- Full guide: [deployment.md](./deployment.md)
-- Railway UI flow: [RAILWAY_UI.md](./RAILWAY_UI.md)
-- Railway CLI flow: [RAILWAY_CLI.md](./RAILWAY_CLI.md)
-- GitHub Actions flow: [RAILWAY_GITHUB_ACTIONS.md](./RAILWAY_GITHUB_ACTIONS.md)
+- Docs index: [docs/README.md](./docs/README.md)
+- Fastest path: [docs/railway-quickstart.md](./docs/railway-quickstart.md)
+- Full guide: [docs/deployment.md](./docs/deployment.md)
+- Bootstrap helper: [`scripts/railway-bootstrap.sh`](./scripts/railway-bootstrap.sh)
 
-## Environment templates
-
-- staging: [`.env.railway.staging.example`](./.env.railway.staging.example)
-- production: [`.env.railway.production.example`](./.env.railway.production.example)
+The bootstrap script wires environment variables consistently for either `production` or `staging` and can queue deploys for backend/frontend using the correct Railway config file for each service.
 
 ## Recommended next steps after deploy
 
@@ -121,11 +106,11 @@ bun run dev
 - configure SMTP if you want password recovery emails
 - add Sentry if you want error monitoring
 
-## Local dev vs hosted environments
+## Local dev vs production
 
 - `compose.yml` and `compose.override.yml` are for **local development**
-- Railway services are the **staging/production** deployment model
-- do not treat the Docker Compose topology as the hosted reference architecture
+- Railway services are the **production** deployment model
+- do not treat the Docker Compose topology as the production reference architecture
 
 ## Credit
 
