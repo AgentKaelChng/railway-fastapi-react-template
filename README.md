@@ -91,8 +91,9 @@ bun run dev
 
 ## Deploy on Railway
 
-- Fastest path: [RAILWAY_QUICKSTART.md](./RAILWAY_QUICKSTART.md)
-- Full guide: [deployment.md](./deployment.md)
+- Docs index: [docs/README.md](./docs/README.md)
+- Fastest path: [docs/railway-quickstart.md](./docs/railway-quickstart.md)
+- Full guide: [docs/deployment.md](./docs/deployment.md)
 - Bootstrap helper: [`scripts/railway-bootstrap.sh`](./scripts/railway-bootstrap.sh)
 
 The bootstrap script wires environment variables consistently for either `production` or `staging` and can queue deploys for backend/frontend using the correct Railway config file for each service.
