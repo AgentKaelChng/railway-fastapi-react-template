@@ -2,17 +2,42 @@
 
 This is the fastest path to a working deploy.
 
+## Branch and environment model
+
+- `develop` → staging
+- `main` → production
+
+If this template becomes your standard app starter, keep that mapping consistent.
+
 ## Create services
 
-In one Railway project, create:
+For each environment, create a Railway project with:
 
 1. **Postgres**
 2. **backend** (from `backend/Dockerfile`)
 3. **frontend** (from `frontend/Dockerfile`)
 
-## Backend variables
+## Staging backend variables
 
-Copy-paste these into the backend service and replace the placeholders:
+```env
+ENVIRONMENT=staging
+PROJECT_NAME=Your App Name (Staging)
+SECRET_KEY=replace-with-a-long-random-secret
+FIRST_SUPERUSER=you@example.com
+FIRST_SUPERUSER_PASSWORD=replace-with-a-strong-password
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+FRONTEND_HOST=https://staging-app.example.com
+BACKEND_CORS_ORIGINS=["https://staging-app.example.com"]
+WEB_CONCURRENCY=1
+```
+
+## Staging frontend variables
+
+```env
+VITE_API_URL=https://staging-api.example.com
+```
+
+## Production backend variables
 
 ```env
 ENVIRONMENT=production
@@ -23,12 +48,18 @@ FIRST_SUPERUSER_PASSWORD=replace-with-a-strong-password
 DATABASE_URL=${{Postgres.DATABASE_URL}}
 FRONTEND_HOST=https://app.example.com
 BACKEND_CORS_ORIGINS=["https://app.example.com"]
+WEB_CONCURRENCY=2
 ```
 
-Optional:
+## Production frontend variables
 
 ```env
-WEB_CONCURRENCY=2
+VITE_API_URL=https://api.example.com
+```
+
+## Optional variables
+
+```env
 SMTP_HOST=
 SMTP_USER=
 SMTP_PASSWORD=
@@ -39,24 +70,15 @@ SMTP_SSL=false
 SENTRY_DSN=
 ```
 
-## Frontend variables
-
-Copy-paste this into the frontend service:
-
-```env
-VITE_API_URL=https://api.example.com
-```
-
 ## Recommended domains
 
+### Staging
+- frontend: `staging-app.example.com`
+- backend: `staging-api.example.com`
+
+### Production
 - frontend: `app.example.com`
 - backend: `api.example.com`
-
-Then make sure the variables line up:
-
-- `FRONTEND_HOST=https://app.example.com`
-- `BACKEND_CORS_ORIGINS=["https://app.example.com"]`
-- `VITE_API_URL=https://api.example.com`
 
 ## What the backend does on deploy
 
@@ -67,10 +89,20 @@ On startup it will:
 3. seed the first admin user
 4. start the API on Railway's `$PORT`
 
+## Deployment interfaces
+
+This template is designed to be configurable through:
+
+- Railway UI
+- Railway CLI
+- GitHub Actions
+
 ## Sanity checklist after deploy
 
 - frontend loads
 - backend docs load at `/docs`
 - login works
 - backend logs show migrations completed successfully
-- password reset links point to the frontend domain, not localhost
+- password reset links point to the correct frontend domain
+- staging does not point at production
+- production does not point at staging

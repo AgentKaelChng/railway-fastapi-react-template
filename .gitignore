@@ -5,6 +5,7 @@
 .env
 .env.*
 !.env.example
+!.env.railway.*.example
 frontend/.env
 frontend/.env.*
 !frontend/.env.example

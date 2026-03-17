@@ -2,24 +2,49 @@
 
 This starter is designed for Railway, not for self-hosted Docker + Traefik.
 
+## Branch and environment model
+
+- `develop` → **staging**
+- `main` → **production**
+
+Read [BRANCHING.md](./BRANCHING.md) for the short version.
+
+## Deployment interfaces
+
+This template is intentionally compatible with three deployment control planes:
+
+1. **Railway UI**
+2. **Railway CLI**
+3. **GitHub Actions**
+
+Use whichever fits the team and the stage of the project.
+
 ## Target layout
 
-Create a single Railway project with these services:
+Recommended default: **one Railway project per environment**.
 
-1. **Postgres**
-2. **backend**
-3. **frontend**
+### Staging project
+- Postgres
+- backend
+- frontend
+
+### Production project
+- Postgres
+- backend
+- frontend
+
+This is cleaner than trying to be overly clever with one project doing everything.
 
 ## Service setup
 
 If you just want the shortest working path, use [RAILWAY_QUICKSTART.md](./RAILWAY_QUICKSTART.md) first and come back here for the fuller reference.
 
-
 ### Postgres
 
 - Add a Railway PostgreSQL service.
 - Keep the generated credentials private.
-- You will use Railway's provided `DATABASE_URL` in the backend service.
+- Use Railway's provided `DATABASE_URL` in the backend service.
+- Keep staging and production databases separate.
 
 ### Backend service
 
@@ -32,9 +57,19 @@ The backend startup sequence is:
 3. seed the initial admin user
 4. start Uvicorn on `$PORT`
 
-#### Required backend variables
+#### Staging backend variables
 
-Set these in Railway:
+- `ENVIRONMENT=staging`
+- `PROJECT_NAME=Your App Name (Staging)`
+- `SECRET_KEY=<generated secret>`
+- `FIRST_SUPERUSER=<your email>`
+- `FIRST_SUPERUSER_PASSWORD=<generated password>`
+- `DATABASE_URL=${{Postgres.DATABASE_URL}}`
+- `FRONTEND_HOST=https://staging-app.example.com`
+- `BACKEND_CORS_ORIGINS=["https://staging-app.example.com"]`
+- `WEB_CONCURRENCY=1`
+
+#### Production backend variables
 
 - `ENVIRONMENT=production`
 - `PROJECT_NAME=Your App Name`
@@ -42,8 +77,9 @@ Set these in Railway:
 - `FIRST_SUPERUSER=<your email>`
 - `FIRST_SUPERUSER_PASSWORD=<generated password>`
 - `DATABASE_URL=${{Postgres.DATABASE_URL}}`
-- `FRONTEND_HOST=https://<your-frontend-domain>`
-- `BACKEND_CORS_ORIGINS=["https://<your-frontend-domain>"]`
+- `FRONTEND_HOST=https://app.example.com`
+- `BACKEND_CORS_ORIGINS=["https://app.example.com"]`
+- `WEB_CONCURRENCY=2`
 
 #### Optional backend variables
 
@@ -55,34 +91,42 @@ Set these in Railway:
 - `SMTP_TLS`
 - `SMTP_SSL`
 - `SENTRY_DSN`
-- `WEB_CONCURRENCY` (defaults to `2`)
 
 ### Frontend service
 
 Use `frontend/Dockerfile`.
 
-#### Required frontend variables
+#### Staging frontend variables
 
-- `VITE_API_URL=https://<your-backend-domain>`
+- `VITE_API_URL=https://staging-api.example.com`
+
+#### Production frontend variables
+
+- `VITE_API_URL=https://api.example.com`
 
 Because Vite bakes variables at build time, changing `VITE_API_URL` requires a rebuild/redeploy.
 
-## Recommended Railway custom domains
+## Recommended custom domains
 
-Use separate domains or subdomains, for example:
+### Staging
+
+- frontend: `staging-app.example.com`
+- backend: `staging-api.example.com`
+
+### Production
 
 - frontend: `app.example.com`
 - backend: `api.example.com`
 
-Then set:
+## Railway UI / CLI / Actions references
 
-- `FRONTEND_HOST=https://app.example.com`
-- `BACKEND_CORS_ORIGINS=["https://app.example.com"]`
-- `VITE_API_URL=https://api.example.com`
+- UI guide: [RAILWAY_UI.md](./RAILWAY_UI.md)
+- CLI guide: [RAILWAY_CLI.md](./RAILWAY_CLI.md)
+- GitHub Actions guide: [RAILWAY_GITHUB_ACTIONS.md](./RAILWAY_GITHUB_ACTIONS.md)
 
 ## Secrets
 
-Do not deploy with the defaults from `.env.example`.
+Do not deploy with the defaults from any example env file.
 
 Generate strong values for:
 
@@ -91,14 +135,18 @@ Generate strong values for:
 
 If you are not using `DATABASE_URL`, also generate a strong `POSTGRES_PASSWORD` for local or non-Railway environments.
 
+Keep staging and production secrets separate.
+
 ## Health and logs
 
 After deploy, verify:
 
-- backend root is reachable through Railway
+- backend is reachable
 - Swagger UI loads at `/docs`
-- frontend can log in against the backend
+- frontend can log in against the matching backend
 - migrations ran successfully in backend logs
+- staging points to staging services only
+- production points to production services only
 
 ## Common failure modes
 
@@ -109,8 +157,9 @@ Usually one of these:
 - wrong `VITE_API_URL`
 - backend has no public domain yet
 - CORS missing the frontend domain
+- staging and production URLs got crossed
 
-### Password reset links point to localhost
+### Password reset links point to localhost or wrong environment
 
 `FRONTEND_HOST` is wrong.
 
@@ -122,13 +171,24 @@ Check backend logs for:
 - migration failure
 - bad secrets / invalid env values
 
+## Promotion flow
+
+Recommended release flow:
+
+1. feature branch
+2. merge to `develop`
+3. staging deploy
+4. verify
+5. merge/promote to `main`
+6. production deploy
+
 ## Local development
 
 Use `compose.yml` and `compose.override.yml` only for local development.
 
-Production on Railway does **not** require:
+Hosted environments on Railway do **not** require:
 
 - Traefik
-- Adminer
+- Adminer as production infra
 - wildcard subdomains
 - a self-hosted Docker host
