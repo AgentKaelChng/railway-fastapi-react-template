@@ -1,25 +1,40 @@
-docs:
-  - all:
-    - changed-files:
+dependencies:
+  - changed-files:
       - any-glob-to-any-file:
-        - '**/*.md'
-      - all-globs-to-all-files:
-        - '!frontend/**'
-        - '!backend/**'
-        - '!.github/**'
-        - '!scripts/**'
-        - '!.gitignore'
-        - '!.pre-commit-config.yaml'
+          - "backend/pyproject.toml"
+          - "uv.lock"
+          - "frontend/package.json"
+          - "bun.lock"
+          - ".github/dependabot.yml"
+          - ".github/workflows/**"
+          - "backend/Dockerfile"
+          - "frontend/Dockerfile"
 
-internal:
-  - all:
-    - changed-files:
+docs:
+  - changed-files:
       - any-glob-to-any-file:
-        - .github/**
-        - scripts/**
-        - .gitignore
-        - .pre-commit-config.yaml
-      - all-globs-to-all-files:
-        - '!./**/*.md'
-        - '!frontend/**'
-        - '!backend/**'
+          - "**/*.md"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "frontend/**"
+
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "backend/**"
+
+railway:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "railway*.json"
+          - ".env.railway*.example"
+          - "scripts/railway-bootstrap.sh"
+          - "deployment.md"
+          - "RAILWAY_QUICKSTART.md"

@@ -1,29 +1,30 @@
 # Security Policy
 
-Security is very important for this project and its community. 🔒
+## Supported scope
 
-Learn more about it below. 👇
+The actively maintained template state on the default branches is the supported scope.
 
-## Versions
+## Reporting a vulnerability
 
-The latest version or release is supported.
+Please do **not** open a public issue for a potential vulnerability.
 
-You are encouraged to write tests for your application and update your versions frequently after ensuring that your tests are passing. This way you will benefit from the latest features, bug fixes, and **security fixes**.
+Instead, use GitHub Security Advisories for this repository:
 
-## Reporting a Vulnerability
+<https://github.com/AgentKaelChng/railway-fastapi-react-template/security/advisories/new>
 
-If you think you found a vulnerability, and even if you are not sure about it, please report it right away by sending an email to: security@tiangolo.com. Please try to be as explicit as possible, describing all the steps and example code to reproduce the security issue.
+If that path is unavailable, contact the maintainer privately first.
 
-I (the author, [@tiangolo](https://twitter.com/tiangolo)) will review it thoroughly and get back to you.
+## Security expectations for this template
 
-## Public Discussions
+If you use this template in a real project, you should at minimum:
 
-Please restrain from publicly discussing a potential security vulnerability. 🙊
+- replace all example secrets before deployment
+- review and rotate `SECRET_KEY`
+- set a strong `FIRST_SUPERUSER_PASSWORD`
+- keep dependencies updated
+- verify Railway environment variables match your real frontend/backend domains
+- avoid exposing staging with production secrets by accident
 
-It's better to discuss privately and try to find a solution first, to limit the potential impact as much as possible.
+## Notes
 
----
-
-Thanks for your help!
-
-The community and I thank you for that. 🙇
+This template tries to provide safe defaults for Railway-based deployment, but it is still a starter. You are responsible for final app security, domain setup, secret handling, and production hardening in downstream projects.
