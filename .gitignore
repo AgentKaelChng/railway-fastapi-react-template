@@ -1,7 +1,33 @@
 .vscode/*
 !.vscode/extensions.json
+
+# local env files
+.env
+.env.*
+!.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+backend/htmlcov/
+backend/.venv/
+
+# node / bun
 node_modules/
+frontend/node_modules/
+
+# test artifacts
 /test-results/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+frontend/test-results/
+frontend/blob-report/
+
+# macOS
+.DS_Store

@@ -1,52 +1,78 @@
 # Railway FastAPI React Template
 
-A Railway-first full-stack starter based on the excellent FastAPI full-stack template, but cleaned up for managed hosting instead of self-hosted Docker + Traefik.
+A Railway-first full-stack starter based on `fastapi/full-stack-fastapi-template`, cleaned up for managed hosting instead of self-hosted Docker + Traefik.
+
+## Why this exists
+
+The original FastAPI template is excellent, but its production story assumes:
+
+- Docker Compose as the deploy primitive
+- Traefik as the ingress layer
+- self-hosted infrastructure and wildcard subdomains
+
+That is the wrong default for Railway.
+
+This repo keeps the good parts of the app scaffold and replaces the deployment opinion.
 
 ## Stack
 
-- FastAPI
-- SQLModel + Alembic
-- PostgreSQL
-- React + Vite + TypeScript
-- Tailwind CSS + shadcn/ui
-- OpenAPI-generated frontend client
+- **Backend:** FastAPI, SQLModel, Alembic, PostgreSQL
+- **Frontend:** React, Vite, TypeScript, Tailwind CSS, shadcn/ui
+- **Auth:** JWT + password recovery flow
+- **DX:** generated OpenAPI client, Playwright, GitHub Actions
 
 ## What changed from the original template
 
-- Removed Traefik-first production assumptions
-- Removed Adminer from the production story
-- Switched backend startup to Railway-compatible `$PORT` binding
-- Added `DATABASE_URL` support for Railway Postgres
-- Simplified frontend deployment around a direct `VITE_API_URL`
-- Rewrote deployment docs for Railway
+- Railway-first deployment docs
+- backend startup binds to **`$PORT`**
+- backend supports **`DATABASE_URL`** for Railway Postgres
+- production story no longer depends on Traefik, Adminer, or wildcard subdomains
+- `.env.example` files added and real `.env` files ignored
+- local Docker Compose retained for development only
 
-## Deploy on Railway
+## Architecture
 
-Create a Railway project with:
+In Railway, create one project with:
 
-- Postgres service
-- backend service using `backend/Dockerfile`
-- frontend service using `frontend/Dockerfile`
+1. **Postgres** service
+2. **backend** service using `backend/Dockerfile`
+3. **frontend** service using `frontend/Dockerfile`
 
-See [deployment.md](./deployment.md) for exact variables.
+The backend container:
 
-## Local development
+- waits for Postgres
+- runs Alembic migrations
+- seeds the initial admin user
+- starts Uvicorn on Railway's injected port
 
-The original Docker Compose workflow is still useful for local development.
+## Quick start
+
+### 1) Clone and prepare env files
+
+```bash
+git clone git@github.com:AgentKaelChng/railway-fastapi-react-template.git
+cd railway-fastapi-react-template
+cp .env.example .env
+cp frontend/.env.example frontend/.env
+```
+
+### 2) Local development with Docker Compose
 
 ```bash
 docker compose watch
 ```
 
-Frontend local dev:
+Local URLs:
 
-```bash
-cd frontend
-bun install
-bun run dev
-```
+- frontend: <http://localhost:5173>
+- backend: <http://localhost:8000>
+- Swagger UI: <http://localhost:8000/docs>
+- MailCatcher: <http://localhost:1080>
+- Adminer: <http://localhost:8080>
 
-Backend local dev:
+### 3) Local development without Docker
+
+**Backend**
 
 ```bash
 cd backend
@@ -55,6 +81,34 @@ source .venv/bin/activate
 fastapi run --reload app/main.py
 ```
 
+**Frontend**
+
+```bash
+cd frontend
+bun install
+bun run dev
+```
+
+## Deploy on Railway
+
+See [deployment.md](./deployment.md) for the exact service setup and required environment variables.
+
+## Recommended next steps after deploy
+
+- set custom domains for frontend and backend
+- set `FRONTEND_HOST` and `BACKEND_CORS_ORIGINS` correctly
+- rotate all default secrets
+- configure SMTP if you want password recovery emails
+- add Sentry if you want error monitoring
+
+## Local dev vs production
+
+- `compose.yml` and `compose.override.yml` are for **local development**
+- Railway services are the **production** deployment model
+- do not treat the Docker Compose topology as the production reference architecture
+
 ## Credit
 
-This project is adapted from `fastapi/full-stack-fastapi-template`. The original template is excellent; this repo simply changes the deployment opinion from self-hosted to Railway-first.
+This project is adapted from <https://github.com/fastapi/full-stack-fastapi-template>.
+
+The original template is excellent. This fork simply changes the infrastructure opinion from self-hosted to Railway-first.
