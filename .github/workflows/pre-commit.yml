@@ -14,7 +14,7 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         name: Checkout PR for own repo
         if: env.HAS_SECRETS == 'true'
         with:
@@ -26,20 +26,20 @@ jobs:
           # A token other than the default GITHUB_TOKEN is needed to be able to trigger CI
           token: ${{ secrets.PRE_COMMIT }}
       # pre-commit lite ci needs the default checkout configs to work
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         name: Checkout PR for fork
         if: env.HAS_SECRETS == 'false'
         with:
-        # To be able to commit it needs the head branch of the PR, the remote one
+          # To be able to commit it needs the head branch of the PR, the remote one
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76 # v2.0.2
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: "3.11"
       - name: Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@22695119d769bdb6f7032ad67b9bca0ef8c4a174 # v5.4.0
         with:
           cache-dependency-glob: |
             requirements**.txt
@@ -65,7 +65,7 @@ jobs:
             git commit -m "🎨 Auto format and update with pre-commit"
             git push
           fi
-      - uses: pre-commit-ci/lite-action@v1.1.0
+      - uses: pre-commit-ci/lite-action@5d6cc0eb514c891a40562a58a8e71576c5c7fb43 # v1.1.0
         if: env.HAS_SECRETS == 'false'
         with:
           msg: 🎨 Auto format and update with pre-commit
@@ -74,13 +74,13 @@ jobs:
         run: exit 1
 
   # https://github.com/marketplace/actions/alls-green#why
-  pre-commit-alls-green:  # This job does nothing and is only used for the branch protection
+  pre-commit-alls-green: # This job does nothing and is only used for the branch protection
     if: always()
     needs:
       - pre-commit
     runs-on: ubuntu-latest
     steps:
       - name: Decide whether the needed jobs succeeded or failed
-        uses: re-actors/alls-green@release/v1
+        uses: re-actors/alls-green@afee1c1eac2a506084c274e9c02c8e0687b48d9e # v1.2.2
         with:
           jobs: ${{ toJSON(needs) }}

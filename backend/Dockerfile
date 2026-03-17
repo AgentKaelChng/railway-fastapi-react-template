@@ -18,4 +18,10 @@ RUN uv sync --frozen --package app
 
 WORKDIR /app/backend/
 
+RUN groupadd --system appuser \
+ && useradd --system --gid appuser --create-home --shell /usr/sbin/nologin appuser \
+ && chown -R appuser:appuser /app
+
+USER appuser
+
 CMD ["bash", "scripts/start.sh"]
