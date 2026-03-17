@@ -11,8 +11,46 @@ import {
 import { handleError } from "@/utils"
 import useCustomToast from "./useCustomToast"
 
+type JwtPayload = {
+  exp?: number
+}
+
+const parseJwtPayload = (token: string): JwtPayload | null => {
+  const parts = token.split(".")
+  if (parts.length !== 3) {
+    return null
+  }
+
+  try {
+    const payload = parts[1]
+      .replace(/-/g, "+")
+      .replace(/_/g, "/")
+      .padEnd(Math.ceil(parts[1].length / 4) * 4, "=")
+    return JSON.parse(window.atob(payload)) as JwtPayload
+  } catch {
+    return null
+  }
+}
+
 const isLoggedIn = () => {
-  return localStorage.getItem("access_token") !== null
+  const token = localStorage.getItem("access_token")
+  if (!token) {
+    return false
+  }
+
+  const payload = parseJwtPayload(token)
+  if (!payload?.exp) {
+    localStorage.removeItem("access_token")
+    return false
+  }
+
+  const nowInSeconds = Math.floor(Date.now() / 1000)
+  if (payload.exp <= nowInSeconds) {
+    localStorage.removeItem("access_token")
+    return false
+  }
+
+  return true
 }
 
 const useAuth = () => {

@@ -43,7 +43,7 @@ const DeleteItem = ({ id, onSuccess }: DeleteItemProps) => {
     },
     onError: handleError.bind(showErrorToast),
     onSettled: () => {
-      queryClient.invalidateQueries()
+      queryClient.invalidateQueries({ queryKey: ["items"] })
     },
   })
 

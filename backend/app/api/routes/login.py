@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -9,6 +9,7 @@ from app import crud
 from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
 from app.core import security
 from app.core.config import settings
+from app.core.rate_limit import get_rate_limit_key, limiter
 from app.models import Message, NewPassword, Token, UserPublic, UserUpdate
 from app.utils import (
     generate_password_reset_token,
@@ -22,18 +23,27 @@ router = APIRouter(tags=["login"])
 
 @router.post("/login/access-token")
 def login_access_token(
-    session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+    request: Request,
+    session: SessionDep,
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
     """
     OAuth2 compatible token login, get an access token for future requests
     """
+    limiter.check(
+        key=get_rate_limit_key(request, "login", form_data.username.lower()),
+        limit=5,
+        window_seconds=60,
+    )
+
     user = crud.authenticate(
         session=session, email=form_data.username, password=form_data.password
     )
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
-    elif not user.is_active:
+    if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return Token(
         access_token=security.create_access_token(
@@ -51,16 +61,25 @@ def test_token(current_user: CurrentUser) -> Any:
 
 
 @router.post("/password-recovery/{email}")
-def recover_password(email: str, session: SessionDep) -> Message:
+def recover_password(request: Request, email: str, session: SessionDep) -> Message:
     """
     Password Recovery
     """
+    limiter.check(
+        key=get_rate_limit_key(request, "password-recovery", email.lower()),
+        limit=3,
+        window_seconds=300,
+    )
+
     user = crud.get_user_by_email(session=session, email=email)
 
     # Always return the same response to prevent email enumeration attacks
     # Only send email if user actually exists
     if user:
-        password_reset_token = generate_password_reset_token(email=email)
+        password_reset_token = generate_password_reset_token(
+            email=email,
+            password_reset_version=user.password_reset_version,
+        )
         email_data = generate_reset_password_email(
             email_to=user.email, email=email, token=password_reset_token
         )
@@ -79,15 +98,20 @@ def reset_password(session: SessionDep, body: NewPassword) -> Message:
     """
     Reset password
     """
-    email = verify_password_reset_token(token=body.token)
-    if not email:
+    token_data = verify_password_reset_token(token=body.token)
+    if not token_data:
         raise HTTPException(status_code=400, detail="Invalid token")
+
+    email, password_reset_version = token_data
     user = crud.get_user_by_email(session=session, email=email)
     if not user:
         # Don't reveal that the user doesn't exist - use same error as invalid token
         raise HTTPException(status_code=400, detail="Invalid token")
-    elif not user.is_active:
+    if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
+    if user.password_reset_version != password_reset_version:
+        raise HTTPException(status_code=400, detail="Invalid token")
+
     user_in_update = UserUpdate(password=body.new_password)
     crud.update_user(
         session=session,
@@ -113,7 +137,10 @@ def recover_password_html_content(email: str, session: SessionDep) -> Any:
             status_code=404,
             detail="The user with this username does not exist in the system.",
         )
-    password_reset_token = generate_password_reset_token(email=email)
+    password_reset_token = generate_password_reset_token(
+        email=email,
+        password_reset_version=user.password_reset_version,
+    )
     email_data = generate_reset_password_email(
         email_to=user.email, email=email, token=password_reset_token
     )

@@ -57,7 +57,7 @@ const UserInformation = () => {
     },
     onError: handleError.bind(showErrorToast),
     onSettled: () => {
-      queryClient.invalidateQueries()
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] })
     },
   })
 

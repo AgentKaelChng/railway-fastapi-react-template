@@ -92,7 +92,10 @@ def test_reset_password(client: TestClient, db: Session) -> None:
         is_superuser=False,
     )
     user = create_user(session=db, user_create=user_create)
-    token = generate_password_reset_token(email=email)
+    token = generate_password_reset_token(
+        email=email,
+        password_reset_version=user.password_reset_version,
+    )
     headers = user_authentication_headers(client=client, email=email, password=password)
     data = {"new_password": new_password, "token": token}
 
@@ -108,6 +111,43 @@ def test_reset_password(client: TestClient, db: Session) -> None:
     db.refresh(user)
     verified, _ = verify_password(new_password, user.hashed_password)
     assert verified
+    assert user.password_reset_version == 1
+
+
+def test_reset_password_token_cannot_be_reused(client: TestClient, db: Session) -> None:
+    email = random_email()
+    password = random_lower_string()
+    new_password = random_lower_string()
+
+    user_create = UserCreate(
+        email=email,
+        full_name="Test User",
+        password=password,
+        is_active=True,
+        is_superuser=False,
+    )
+    user = create_user(session=db, user_create=user_create)
+    token = generate_password_reset_token(
+        email=email,
+        password_reset_version=user.password_reset_version,
+    )
+    headers = user_authentication_headers(client=client, email=email, password=password)
+    data = {"new_password": new_password, "token": token}
+
+    first_response = client.post(
+        f"{settings.API_V1_STR}/reset-password/",
+        headers=headers,
+        json=data,
+    )
+    assert first_response.status_code == 200
+
+    second_response = client.post(
+        f"{settings.API_V1_STR}/reset-password/",
+        headers=headers,
+        json=data,
+    )
+    assert second_response.status_code == 400
+    assert second_response.json()["detail"] == "Invalid token"
 
 
 def test_reset_password_invalid_token(
